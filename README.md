@@ -1,4 +1,4 @@
 # secure-sockets
 
-serverpw: 1337x2
-clientpw: 1337x2
+This is lab 3 in the course TNM031 Network Programming and Security.
+The lab is about implementing secure sockets in Java. 

@@ -1,7 +1,6 @@
 package server;
 
 import java.io.*;
-import java.net.*;
 import javax.net.ssl.*;
 import java.security.*;
 
@@ -10,8 +9,8 @@ public class SecureServer {
 	private int port;
 
 	static final int DEFAULT_PORT = 8189;
-	static final String KEYSTORE = "./server/assets/JOCKEkeystore.ks";
-	static final String TRUSTSTORE = "./server/assets/JOCKEtruststore.ks";
+	static final String KEYSTORE = "./server/assets/SERVERkeystore.ks";
+	static final String TRUSTSTORE = "./server/assets/SERVERtruststore.ks";
 	static final String KEYPW = "1337x2";
 	static final String TRUSTPW = "1337x2";
 
@@ -42,7 +41,7 @@ public class SecureServer {
 			SSLServerSocket socket = (SSLServerSocket) sslServerFactory.createServerSocket(port);
 			socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
 			
-			System.out.println("\n>>>> Jockes säkra SÄRVER: active ");
+			System.out.println("\n>>>> Secure Server: active ");
 			SSLSocket incoming = (SSLSocket)socket.accept();
 
 			in = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
@@ -54,27 +53,25 @@ public class SecureServer {
 				String fileName;
 
 				switch (choice) {
+					case 1:
+						fileName = in.readLine();
+						upload(fileName);
+						break;
 					case 2:
 						fileName = in.readLine();
 						download(fileName);
+						out.println("STATUS:DONE");
 						break;
 					case 3:
-						System.out.println("Server: Delete");
-						out.println("Sent from server: Delete");
-						break;
-					case 1:
-						System.out.println("UPLOAD");
 						fileName = in.readLine();
-						System.out.println(fileName);
-						upload(fileName);
+						delete(fileName);
 						break;
 				
 					default:
-						System.out.println("Server: Neither");
-						out.println("Sent from server: Neither");
+						System.out.println("Invalid choice");
+						out.println("Invalid choice");
 						break;
 				}
-				System.out.println("LOPP");
 			}
 			incoming.close();
 		}
@@ -89,16 +86,15 @@ public class SecureServer {
 		try {
 			StringBuilder content = new StringBuilder();
 			String s = in.readLine();
-			while(s != null) {
-				System.out.println("LINE : " + s);
-				content.append(s + "\n");
+			while(!s.equals("STATUS:DONE")) {
+				content.append(s);
 				s = in.readLine();
+				if(!s.equals("STATUS:DONE")) content.append("\n");
 			}
 
 			String file = content.toString();
-			System.out.println("FILE: " + file);
 			try {
-				BufferedWriter wr = new BufferedWriter(new FileWriter(fileName));
+				BufferedWriter wr = new BufferedWriter(new FileWriter("./server/files/" + fileName));
 				wr.write(file, 0, file.length());
 				wr.close();
 				out.println(" - Upload success -");
@@ -115,20 +111,32 @@ public class SecureServer {
 
 	private void download(String fileName) {
 		try {
-			String s;
-			BufferedReader br = new BufferedReader(new FileReader(fileName));
-			while((s = br.readLine()) != null) {
-				out.println(s);
+			StringBuilder sb = new StringBuilder();
+			BufferedReader br = new BufferedReader(new FileReader("./server/files/" + fileName));
+			String line = br.readLine();
+			while(line != null) {
+				sb.append(line);
+				line = br.readLine();
+				if(line != null) sb.append(System.lineSeparator());
 			}
 			br.close();
+			out.println(sb.toString());
+			System.out.println(" - Download success - ");
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void deleteFile() {
-
+	private void delete(String fileName) {
+		try {
+			File f = new File("./server/files/" + fileName);
+			if(f.delete()) out.println(fileName + " deleted from server.");
+			else out.println("File could not be deleted.");
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static void main(String[] args) {

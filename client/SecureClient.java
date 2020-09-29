@@ -13,10 +13,13 @@ public class SecureClient {
 	private InetAddress host;
 
 	static final int DEFAULT_PORT = 8189;
-	static final String KEYSTORE = "./client/assets/CLIENTstore.ks";
+	static final String KEYSTORE = "./client/assets/CLIENTkeystore.ks";
 	static final String TRUSTSTORE = "./client/assets/CLIENTtruststore.ks";
 	static final String KEYPW = "1337x2";
 	static final String TRUSTPW = "1337x2";
+
+	private BufferedReader socketIn;
+	private PrintWriter socketOut;
 
 	public SecureClient(InetAddress _host, int _port) {
 		this.host = _host;
@@ -46,42 +49,72 @@ public class SecureClient {
 			System.out.println("\n>>>> SSL/TLS handshake completed");
 
 			
-			BufferedReader socketIn;
+		
 			socketIn = new BufferedReader(new InputStreamReader(client.getInputStream()));
-			PrintWriter socketOut = new PrintWriter(client.getOutputStream(), true);
+			socketOut = new PrintWriter(client.getOutputStream(), true);
 			
-			menu();
-			String choice = new BufferedReader(new InputStreamReader(System.in)).readLine();
-			int option = Integer.parseInt(choice);
-			socketOut.println(choice);
+			int option = 0;
+			while(option != 4) {
+				menu();
+				String choice = new BufferedReader(new InputStreamReader(System.in)).readLine();
+				option = Integer.parseInt(choice);
+				socketOut.println(choice);
+					
+				switch (option) {
+					case 1:
+						System.out.println("Enter the filename to upload: ");
+						try {
+							String filename = new BufferedReader(new InputStreamReader(System.in)).readLine();
+							String filedata = uploadToServer(filename);
+							socketOut.println(filename);
+							socketOut.println(filedata);
+							// socketOut.println("eof");
+							socketOut.println("STATUS:DONE");
+							System.out.println(socketIn.readLine());
+						}
+						catch (Exception e) {
+							System.out.println("Something went terrible wrong....");
+							e.printStackTrace();	
+						}	
+						break;
+					case 2: //download
+						System.out.println("Enter the filename of which you want to download");
+						try {
+							String filename = new BufferedReader(new InputStreamReader(System.in)).readLine();
+							socketOut.println(filename);
+							String fileData = downloadFromServer(socketIn);
+							createFile(filename, fileData);
+						}
+						catch(Exception e) {
+							System.out.println("Something went terrible wrong....");	
+							e.printStackTrace();
+						}
+						break;
+					case 3: // delete
+						System.out.println("Enter the name of the file you want to delete");
+						try {
+							String filename = new BufferedReader(new InputStreamReader(System.in)).readLine();
+							socketOut.println(filename);
+							System.out.println(socketIn.readLine());
+						}
+						catch(Exception e) {
+							System.out.println("Something went terrible wrong....");	
+							e.printStackTrace();
+						}
+						break;
+					
+					case 4: //exit
+						System.out.println("Thank you for using our services, see you next time cowboy!");
+						socketOut.println(4);
+						break;
 
-			switch (option) {
-				case 1:
-					System.out.println("Enter the filename to upload: ");
-					try {
-						String filename = new BufferedReader(new InputStreamReader(System.in)).readLine();
-						String filedata = uploadToServer(filename);
-						socketOut.println(filename);
-						socketOut.println(filedata);
-						// socketOut.println("eof");
-						System.out.println(socketIn.readLine());
-					}
-					catch (Exception e) {
-						System.out.println("Something went terrible wrong....");	
-					}	
-					break;
-				case 2:
-					System.out.println("Inte klar för fan");
-					break;
-				case 3:
-					System.out.println("Inte klar för fan");
-					break; 
-
-				default:
-					break;
+					default:
+						System.out.println("Wrong input, please choose a number between 1-4");
+						break;
+				}
 			}
 			
-			socketOut.println(4);
+			client.close();
 		}
 		catch(Exception x) {
 			System.out.println(x);
@@ -97,10 +130,9 @@ public class SecureClient {
 	
 			String row = buffR.readLine();
 			while(row != null) {
-				System.out.println(row);
 				stringB.append(row);
-				stringB.append(System.lineSeparator());
 				row = buffR.readLine();
+				if(row != null) stringB.append(System.lineSeparator());
 			}
 			buffR.close();
 			return stringB.toString();
@@ -108,18 +140,50 @@ public class SecureClient {
 		catch(Exception e) {
 			System.out.println(e);
 			e.printStackTrace();
-			return "Something went fkn wrong!!!!";
+			return "ERROR";
 		}
 		
-		
+	}
+	private String downloadFromServer(BufferedReader socketIn) {
+		try {
+			StringBuilder stringB = new StringBuilder();
+			String row = socketIn.readLine();
+			String data = "";
+	
+			while(!row.equals("STATUS:DONE")) {
+				stringB.append(row);
+				stringB.append(System.lineSeparator());
+				row = socketIn.readLine();
+			}
+			data = stringB.toString();
+
+			return data;
+		}
+		catch (Exception e) {
+			System.out.println(e);
+			e.printStackTrace();
+			return "Some shit went crazy";
+		}
 	}
 
-	//createFile()
+	private void createFile(String _filename, String _fileData) {
+		String filename = _filename;
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("./client/files/" + filename);
+			writer.print(_fileData);
+			writer.close();
+			System.out.println(filename + " succesfully downloaded");
+		}
+		catch (Exception e) {
+			System.out.println(e);
+			e.printStackTrace();
+		}
+	}
 
-	//deleteFile()
 
 	public void menu() {
-		System.out.println("Please choose your operation");
+		System.out.println("\nPlease choose your operation");
 		System.out.println("1. Upload a file");
 		System.out.println("2. Download a file");
 		System.out.println("3. Delete a file");
