@@ -68,7 +68,7 @@ public class SecureClient {
 							String filedata = uploadToServer(filename);
 							socketOut.println(filename);
 							socketOut.println(filedata);
-							// socketOut.println("eof");
+
 							socketOut.println("STATUS:DONE");
 							System.out.println(socketIn.readLine());
 						}

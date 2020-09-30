@@ -39,6 +39,7 @@ public class SecureServer {
 			sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 			SSLServerSocketFactory sslServerFactory = sslContext.getServerSocketFactory();
 			SSLServerSocket socket = (SSLServerSocket) sslServerFactory.createServerSocket(port);
+			socket.setNeedClientAuth(true); 
 			socket.setEnabledCipherSuites(socket.getSupportedCipherSuites());
 			
 			System.out.println("\n>>>> Secure Server: active ");
